@@ -30,7 +30,9 @@ private slots:
 
 	void on_actionLoad_Red_List_triggered();
 
-	void on_Market_currentIndexChanged(int index);
+	void on_actionSave_Red_List_triggered();
+
+	void on_actionSave_Ignore_List_triggered();
 
 	void on_DistanceToStarLs_editingFinished();
 
@@ -38,9 +40,29 @@ private slots:
 
 	void on_PadLarge_clicked();
 
+	void on_AlwaysOnTop_clicked(bool checked);
+
+	void on_Ignore_clicked();
+
+	void on_actionLoad_Ignore_List_triggered();
+
+	void on_DoneStations_clicked();
+
+	void on_actionSave_Done_Stations_triggered();
+
+	void on_MarketUnknown_clicked();
+
+	void on_MarketYes_clicked();
+
+	void on_MarketNo_clicked();
+
+	void on_ClipboardSystemName_clicked();
+
+	void on_ClipboardStationName_clicked();
+
 private:
 	Ui::MainWindow *ui;
-	QList<QString> lines,redstations;
+	QList<QString> stations,redstations,ignores,donestations;
 	int i;
 	void ParseLine(QString line);
 	void SystemNameAutoClipboard(QString line);

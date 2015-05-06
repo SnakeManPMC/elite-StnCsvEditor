@@ -16,7 +16,7 @@ MainWindow::MainWindow(QWidget *parent) :
 	StnCsvEditorVersion = "v0.0.0";
 	setWindowTitle("StnCsvEditor PMC " + StnCsvEditorVersion);
 
-	i = 0;
+	i = 1;
 
 	// debug load the shit straight up :)
 	// red list source CSV
@@ -28,11 +28,11 @@ MainWindow::MainWindow(QWidget *parent) :
 	QTextStream in(&file);
 	while (!in.atEnd())
 	{
-		lines.push_back(in.readLine());
+		stations.push_back(in.readLine());
 	}
 	file.close();
-	ui->StationText->setText(lines[i]);
-	ParseLine(lines[i]);
+	ui->StationText->setText(stations[i]);
+	ParseLine(stations[i]);
 }
 
 MainWindow::~MainWindow()
@@ -49,8 +49,8 @@ void MainWindow::on_Previous_clicked()
 	if (i > 1)
 	{
 		i--;
-		ui->StationText->setText(lines[i]);
-		ParseLine(lines[i]);
+		ui->StationText->setText(stations[i]);
+		ParseLine(stations[i]);
 	}
 	else
 		ui->textEdit->append("At digit 1, no lower lines available. Please use Next to browse forward.");
@@ -61,25 +61,42 @@ void MainWindow::on_Next_clicked()
 {
 	// next system button
 	i++;
-	ui->StationText->setText(lines[i]);
-	ParseLine(lines[i]);
+	ui->StationText->setText(stations[i]);
+	ParseLine(stations[i]);
 }
 
+
+// add station button
 void MainWindow::on_AddStation_clicked()
 {
-	// add station button
+	// 1) has to add automatically full "line" template
+	// 2) same system name that we currently are in i
+	// 3) assume large station and has market
+	// 4) dialog for station name?
+
+	QString line = stations[i];
+	QStringList list = line.split(",");
+	stations.insert(i, "New Station Template");
+	stations[i] = list[0] + ",'" + ui->SystemText->text() + "',0,'?','?','?','?','2015-05-06 06:06:06','?','?','?','?'";
+
+	ui->SystemText->clear();
+	// display our new station
+	i--;
+	on_Next_clicked();
+
+	ui->textEdit->append("New station created:\n" + stations[i]);
 }
 
 
 void MainWindow::on_RedItOut_clicked()
 {
 	// put station in the red list
-	redstations.push_back(lines[i]);
+	redstations.push_back(stations[i]);
 	// remove station from lines list
-	lines.removeAt(i);
+	stations.removeAt(i);
 
 	// refresh our station text with the new i station number
-	ui->StationText->setText(lines[i]);
+	ui->StationText->setText(stations[i]);
 	ui->textEdit->append("Put station: " + redstations.last() + " in the red list.");
 }
 
@@ -109,7 +126,7 @@ void MainWindow::on_actionLoad_CSV_triggered()
 		QTextStream in(&file);
 		while (!in.atEnd())
 		{
-			lines.append(in.readLine());
+			stations.append(in.readLine());
 		}
 		file.close();
 	}
@@ -136,15 +153,40 @@ void MainWindow::on_actionSave_CSV_triggered()
 	}
 
 	QTextStream out(&file);
-	for(int cx = 0; cx < lines.count(); cx++) out << lines[cx] + "\n";
+	for(int cx = 0; cx < stations.count(); cx++) out << stations[cx] + "\n";
 	file.close();
-	ui->textEdit->append("Wrote " + QString::number(lines.count()) + " into " + fileName);
+	ui->textEdit->append("Wrote " + QString::number(stations.count()) + " into " + fileName);
 }
 
 
 void MainWindow::on_actionLoad_Red_List_triggered()
 {
+	QString fileName;
+	QString line;
 
+	fileName = QFileDialog::getOpenFileName(
+		this,
+		"Choose a CSV file to open",
+		QString::null,
+		QString::null);
+
+	if (fileName.isEmpty())
+	return;
+	else
+	{
+		// red list source CSV
+		QFile file(fileName);
+		if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+		{
+			QMessageBox::information(this, tr("Unable to open source CSV file"), file.errorString());
+		}
+		QTextStream in(&file);
+		while (!in.atEnd())
+		{
+			redstations.append(in.readLine());
+		}
+		file.close();
+	}
 }
 
 
@@ -163,6 +205,7 @@ void MainWindow::ParseLine(QString line)
 		ui->textEdit->append("list[4] == L");
 		ui->PadLarge->setChecked(true);
 		ui->PadMedium->setChecked(false);
+		ui->PadUnknown->setChecked(false);
 	}
 
 	if (list[4] == "'M'")
@@ -170,6 +213,7 @@ void MainWindow::ParseLine(QString line)
 		ui->textEdit->append("list[4] == M");
 		ui->PadLarge->setChecked(false);
 		ui->PadMedium->setChecked(true);
+		ui->PadUnknown->setChecked(false);
 	}
 
 	if (list[4] == "'?'")
@@ -177,24 +221,31 @@ void MainWindow::ParseLine(QString line)
 		ui->textEdit->append("list[4] == ?");
 		ui->PadLarge->setChecked(false);
 		ui->PadMedium->setChecked(false);
+		ui->PadUnknown->setChecked(true);
 	}
 
 	if (list[5] == "'?'")
 	{
 		ui->textEdit->append("list[5] == ?");
-		ui->Market->setCurrentIndex(0);
+		ui->MarketUnknown->setChecked(true);
+		ui->MarketYes->setChecked(false);
+		ui->MarketNo->setChecked(false);
 	}
 
 	if (list[5] == "'Y'")
 	{
 		ui->textEdit->append("list[5] == Y");
-		ui->Market->setCurrentIndex(1);
+		ui->MarketUnknown->setChecked(false);
+		ui->MarketYes->setChecked(true);
+		ui->MarketNo->setChecked(false);
 	}
 
 	if (list[5] == "'N'")
 	{
 		ui->textEdit->append("list[5] == N");
-		ui->Market->setCurrentIndex(2);
+		ui->MarketUnknown->setChecked(false);
+		ui->MarketYes->setChecked(false);
+		ui->MarketNo->setChecked(true);
 	}
 
 	// if we automatically clipboard system name
@@ -202,18 +253,24 @@ void MainWindow::ParseLine(QString line)
 }
 
 
-// market dropdown was activated by user?
-// unfortunately this is launched also when we internally change the data, hehe
-void MainWindow::on_Market_currentIndexChanged(int index)
-{
-	if (index == 0) ui->textEdit->append("Well index is 0 hehe");
-	ui->textEdit->append("You changed Market info.");
-}
-
-
 // distance from star, editing has finished
 void MainWindow::on_DistanceToStarLs_editingFinished()
 {
+	QStringList list;
+	list = stations[i].split(",");
+	stations[i] = list[0] + "," +
+			list[1] + "," +
+			QString::number(ui->DistanceToStarLs->value()) + "," +
+			list[3] + "," +
+			list[4] + "," +
+			list[5] + "," +
+			list[6] + "," +
+			list[7] + "," +
+			list[8] + "," +
+			list[9] + "," +
+			list[10] + "," +
+			list[11];
+
 	ui->textEdit->append("distance from star editing has finished!");
 }
 
@@ -221,6 +278,21 @@ void MainWindow::on_DistanceToStarLs_editingFinished()
 // landing pad set to Medium
 void MainWindow::on_PadMedium_clicked()
 {
+	QStringList list;
+	list = stations[i].split(",");
+	stations[i] = list[0] + "," +
+			list[1] + "," +
+			list[2] + "," +
+			list[3] + "," +
+			"'M'," +
+			list[5] + "," +
+			list[6] + "," +
+			list[7] + "," +
+			list[8] + "," +
+			list[9] + "," +
+			list[10] + "," +
+			list[11];
+
 	ui->textEdit->append("landing pad set to medium!");
 }
 
@@ -228,6 +300,26 @@ void MainWindow::on_PadMedium_clicked()
 // landing pad set to large
 void MainWindow::on_PadLarge_clicked()
 {
+	QStringList list;
+	list = stations[i].split(",");
+	stations[i] = list[0] + "," +
+			list[1] + "," +
+			list[2] + "," +
+			list[3] + "," +
+			"'L'," +
+			"'Y'" + "," +
+			list[6] + "," +
+			list[7] + "," +
+			list[8] + "," +
+			list[9] + "," +
+			list[10] + "," +
+			list[11];
+
+	// because every large pad station (starport) has market, we set that also to Y
+	ui->MarketUnknown->setChecked(false);
+	ui->MarketYes->setChecked(true);
+	ui->MarketNo->setChecked(false);
+
 	ui->textEdit->append("landing pad set to large!");
 }
 
@@ -243,4 +335,247 @@ void MainWindow::SystemNameAutoClipboard(QString line)
 
 	QClipboard *clipboard = QApplication::clipboard();
 	clipboard->setText(line);
+}
+
+
+// always on top check box
+void MainWindow::on_AlwaysOnTop_clicked(bool checked)
+{
+	Qt::WindowFlags flags = this->windowFlags();
+	if (checked)
+	{
+	    flags ^= Qt::WindowStaysOnBottomHint;
+	    flags |= Qt::WindowStaysOnTopHint;
+	}
+	else
+	{
+	    flags ^= Qt::WindowStaysOnTopHint;
+	    flags |= Qt::WindowStaysOnBottomHint;
+	}
+	this->setWindowFlags(flags);
+	this->show();
+}
+
+
+// ignore current station
+void MainWindow::on_Ignore_clicked()
+{
+	ignores.push_back(stations[i]);
+	stations.removeAt(i);
+
+	on_Previous_clicked();
+}
+
+
+// save ignore list
+void MainWindow::on_actionSave_Ignore_List_triggered()
+{
+	QString fileName = QFileDialog::getSaveFileName(this);
+	if (fileName.isEmpty())
+		//return false;
+		exit(1);
+
+	QFile file(fileName);
+	if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+	{
+		QMessageBox::warning(this, tr("StnCsvEditor"),
+				tr("Cannot write file %1:\n%2.")
+				.arg(fileName)
+				.arg(file.errorString()));
+		//return false;
+		exit(1);
+	}
+
+	QTextStream out(&file);
+	for(int cx = 0; cx < ignores.count(); cx++) out << ignores[cx] + "\n";
+	file.close();
+	ui->textEdit->append("Wrote " + QString::number(ignores.count()) + " into " + fileName);
+}
+
+
+// save red list
+void MainWindow::on_actionSave_Red_List_triggered()
+{
+	QString fileName = QFileDialog::getSaveFileName(this);
+	if (fileName.isEmpty())
+		//return false;
+		exit(1);
+
+	QFile file(fileName);
+	if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+	{
+		QMessageBox::warning(this, tr("StnCsvEditor"),
+				tr("Cannot write file %1:\n%2.")
+				.arg(fileName)
+				.arg(file.errorString()));
+		//return false;
+		exit(1);
+	}
+
+	QTextStream out(&file);
+	for(int cx = 0; cx < redstations.count(); cx++) out << redstations[cx] + "\n";
+	file.close();
+	ui->textEdit->append("Wrote " + QString::number(redstations.count()) + " into " + fileName);
+}
+
+
+// load ignore list
+void MainWindow::on_actionLoad_Ignore_List_triggered()
+{
+	QString fileName;
+	QString line;
+
+	fileName = QFileDialog::getOpenFileName(
+		this,
+		"Choose a CSV file to open",
+		QString::null,
+		QString::null);
+
+	if (fileName.isEmpty())
+	return;
+	else
+	{
+		// ignore list source CSV
+		QFile file(fileName);
+		if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+		{
+			QMessageBox::information(this, tr("Unable to open source CSV file"), file.errorString());
+		}
+		QTextStream in(&file);
+		while (!in.atEnd())
+		{
+			ignores.append(in.readLine());
+		}
+		file.close();
+	}
+}
+
+
+// big done button, add our station to DONE list and remove from stations list
+void MainWindow::on_DoneStations_clicked()
+{
+	// if this is the first done station, lets add header also
+	if (donestations.count() == 0) donestations.push_back(stations[0]);
+
+	// and then our done station
+	donestations.push_back(stations[i]);
+	stations.removeAt(i);
+
+	// we want to display the NEXT station, so decrease counter then hit next
+	i--;
+	on_Next_clicked();
+}
+
+
+// save done stations, ready to be uploaded to Maddavo ;)
+void MainWindow::on_actionSave_Done_Stations_triggered()
+{
+	QString fileName = QFileDialog::getSaveFileName(this);
+	if (fileName.isEmpty())
+		//return false;
+		exit(1);
+
+	QFile file(fileName);
+	if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+	{
+		QMessageBox::warning(this, tr("StnCsvEditor"),
+				tr("Cannot write file %1:\n%2.")
+				.arg(fileName)
+				.arg(file.errorString()));
+		//return false;
+		exit(1);
+	}
+
+	QTextStream out(&file);
+	for(int cx = 0; cx < donestations.count(); cx++) out << donestations[cx] + "\n";
+	file.close();
+	ui->textEdit->append("Wrote " + QString::number(donestations.count()) + " into " + fileName);
+}
+
+
+// market set to unknown
+void MainWindow::on_MarketUnknown_clicked()
+{
+	QString market = "'?'";
+
+	QStringList list;
+	list = stations[i].split(",");
+	stations[i] = list[0] + "," +
+			list[1] + "," +
+			list[2] + "," +
+			list[3] + "," +
+			list[4] + "," +
+			market + "," +
+			list[6] + "," +
+			list[7] + "," +
+			list[8] + "," +
+			list[9] + "," +
+			list[10] + "," +
+			list[11];
+
+	ui->textEdit->append("on_MarketUnknown_clicked()");
+}
+
+
+// market set to yes
+void MainWindow::on_MarketYes_clicked()
+{
+	QString market = "'Y'";
+
+	QStringList list;
+	list = stations[i].split(",");
+	stations[i] = list[0] + "," +
+			list[1] + "," +
+			list[2] + "," +
+			list[3] + "," +
+			list[4] + "," +
+			market + "," +
+			list[6] + "," +
+			list[7] + "," +
+			list[8] + "," +
+			list[9] + "," +
+			list[10] + "," +
+			list[11];
+
+	ui->textEdit->append("on_MarketYes_clicked()");
+}
+
+
+// market set to no
+void MainWindow::on_MarketNo_clicked()
+{
+	QString market = "'N'";
+
+	QStringList list;
+	list = stations[i].split(",");
+	stations[i] = list[0] + "," +
+			list[1] + "," +
+			list[2] + "," +
+			list[3] + "," +
+			list[4] + "," +
+			market + "," +
+			list[6] + "," +
+			list[7] + "," +
+			list[8] + "," +
+			list[9] + "," +
+			list[10] + "," +
+			list[11];
+
+	ui->textEdit->append("on_MarketNo_clicked()");
+}
+
+
+// copy system name to clipboard
+void MainWindow::on_ClipboardSystemName_clicked()
+{
+	QStringList list = stations[i].split(",");
+	SystemNameAutoClipboard(list[0]);
+}
+
+
+// copy station name to clipboard
+void MainWindow::on_ClipboardStationName_clicked()
+{
+	QStringList list = stations[i].split(",");
+	SystemNameAutoClipboard(list[1]);
 }
