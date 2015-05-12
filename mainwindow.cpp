@@ -14,10 +14,11 @@ MainWindow::MainWindow(QWidget *parent) :
 
 	// our softwares version
 	StnCsvEditorVersion = "v0.0.0";
-	setWindowTitle("StnCsvEditor PMC " + StnCsvEditorVersion);
+	setWindowTitle("StnCsvEditor " + StnCsvEditorVersion + " by PMC");
 
 	i = 1;
 
+	/*
 	// debug load the shit straight up :)
 	// red list source CSV
 	QFile file("d:\\coding\\test_files\\stations_maddavo.csv");
@@ -33,6 +34,7 @@ MainWindow::MainWindow(QWidget *parent) :
 	file.close();
 	ui->StationText->setText(stations[i]);
 	ParseLine(stations[i]);
+	*/
 }
 
 MainWindow::~MainWindow()
@@ -60,9 +62,14 @@ void MainWindow::on_Previous_clicked()
 void MainWindow::on_Next_clicked()
 {
 	// next system button
-	i++;
-	ui->StationText->setText(stations[i]);
-	ParseLine(stations[i]);
+	if (i < stations.count())
+	{
+		i++;
+		ui->StationText->setText(stations[i]);
+		ParseLine(stations[i]);
+	}
+	else
+		ui->textEdit->append("At last digit, no more lines available. Please use Previous to browse backward.");
 }
 
 
@@ -73,18 +80,22 @@ void MainWindow::on_AddStation_clicked()
 	// 2) same system name that we currently are in i
 	// 3) assume large station and has market
 	// 4) dialog for station name?
+	if (!ui->SystemText->text().size() == 0)
+	{
+		QString line = stations[i];
+		QStringList list = line.split(",");
+		stations.insert(i, "New Station Template");
+		stations[i] = list[0] + ",'" + ui->SystemText->text() + "',0,'?','?','?','?','2015-05-06 06:06:06','?','?','?','?'";
 
-	QString line = stations[i];
-	QStringList list = line.split(",");
-	stations.insert(i, "New Station Template");
-	stations[i] = list[0] + ",'" + ui->SystemText->text() + "',0,'?','?','?','?','2015-05-06 06:06:06','?','?','?','?'";
+		ui->SystemText->clear();
+		// display our new station
+		i--;
+		on_Next_clicked();
 
-	ui->SystemText->clear();
-	// display our new station
-	i--;
-	on_Next_clicked();
-
-	ui->textEdit->append("New station created:\n" + stations[i]);
+		ui->textEdit->append("New station created:\n" + stations[i]);
+	}
+	else
+		ui->textEdit->append("You must type Station name into the first text box :)");
 }
 
 
@@ -196,13 +207,13 @@ void MainWindow::ParseLine(QString line)
 	list = line.split(",");
 	bool ok;
 	ui->DistanceToStarLs->setValue(list[2].toInt(&ok, 10));
-	ui->textEdit->append("Distance from star: " + list[2]);
-	ui->textEdit->append("Landing Pad: " + list[4]);
-	ui->textEdit->append("Market: " + list[5]);
+	//ui->textEdit->append("Distance from star: " + list[2]);
+	//ui->textEdit->append("Landing Pad: " + list[4]);
+	//ui->textEdit->append("Market: " + list[5]);
 
 	if (list[4] == "'L'")
 	{
-		ui->textEdit->append("list[4] == L");
+		//ui->textEdit->append("list[4] == L");
 		ui->PadLarge->setChecked(true);
 		ui->PadMedium->setChecked(false);
 		ui->PadUnknown->setChecked(false);
@@ -210,7 +221,7 @@ void MainWindow::ParseLine(QString line)
 
 	if (list[4] == "'M'")
 	{
-		ui->textEdit->append("list[4] == M");
+		//ui->textEdit->append("list[4] == M");
 		ui->PadLarge->setChecked(false);
 		ui->PadMedium->setChecked(true);
 		ui->PadUnknown->setChecked(false);
@@ -218,7 +229,7 @@ void MainWindow::ParseLine(QString line)
 
 	if (list[4] == "'?'")
 	{
-		ui->textEdit->append("list[4] == ?");
+		//ui->textEdit->append("list[4] == ?");
 		ui->PadLarge->setChecked(false);
 		ui->PadMedium->setChecked(false);
 		ui->PadUnknown->setChecked(true);
@@ -226,7 +237,7 @@ void MainWindow::ParseLine(QString line)
 
 	if (list[5] == "'?'")
 	{
-		ui->textEdit->append("list[5] == ?");
+		//ui->textEdit->append("list[5] == ?");
 		ui->MarketUnknown->setChecked(true);
 		ui->MarketYes->setChecked(false);
 		ui->MarketNo->setChecked(false);
@@ -234,7 +245,7 @@ void MainWindow::ParseLine(QString line)
 
 	if (list[5] == "'Y'")
 	{
-		ui->textEdit->append("list[5] == Y");
+		//ui->textEdit->append("list[5] == Y");
 		ui->MarketUnknown->setChecked(false);
 		ui->MarketYes->setChecked(true);
 		ui->MarketNo->setChecked(false);
@@ -242,7 +253,7 @@ void MainWindow::ParseLine(QString line)
 
 	if (list[5] == "'N'")
 	{
-		ui->textEdit->append("list[5] == N");
+		//ui->textEdit->append("list[5] == N");
 		ui->MarketUnknown->setChecked(false);
 		ui->MarketYes->setChecked(false);
 		ui->MarketNo->setChecked(true);
@@ -271,7 +282,7 @@ void MainWindow::on_DistanceToStarLs_editingFinished()
 			list[10] + "," +
 			list[11];
 
-	ui->textEdit->append("distance from star editing has finished!");
+	//ui->textEdit->append("distance from star editing has finished!");
 }
 
 
@@ -293,7 +304,7 @@ void MainWindow::on_PadMedium_clicked()
 			list[10] + "," +
 			list[11];
 
-	ui->textEdit->append("landing pad set to medium!");
+	//ui->textEdit->append("landing pad set to medium!");
 }
 
 
@@ -320,7 +331,7 @@ void MainWindow::on_PadLarge_clicked()
 	ui->MarketYes->setChecked(true);
 	ui->MarketNo->setChecked(false);
 
-	ui->textEdit->append("landing pad set to large!");
+	//ui->textEdit->append("landing pad set to large!");
 }
 
 
@@ -464,6 +475,9 @@ void MainWindow::on_DoneStations_clicked()
 	// we want to display the NEXT station, so decrease counter then hit next
 	i--;
 	on_Next_clicked();
+
+	// show how many stations user has 'done' now
+	ui->textEdit->append("Stations done: " + QString::number(donestations.count() - 1));
 }
 
 
@@ -513,7 +527,7 @@ void MainWindow::on_MarketUnknown_clicked()
 			list[10] + "," +
 			list[11];
 
-	ui->textEdit->append("on_MarketUnknown_clicked()");
+	//ui->textEdit->append("on_MarketUnknown_clicked()");
 }
 
 
@@ -537,7 +551,7 @@ void MainWindow::on_MarketYes_clicked()
 			list[10] + "," +
 			list[11];
 
-	ui->textEdit->append("on_MarketYes_clicked()");
+	//ui->textEdit->append("on_MarketYes_clicked()");
 }
 
 
@@ -561,7 +575,7 @@ void MainWindow::on_MarketNo_clicked()
 			list[10] + "," +
 			list[11];
 
-	ui->textEdit->append("on_MarketNo_clicked()");
+	//ui->textEdit->append("on_MarketNo_clicked()");
 }
 
 
