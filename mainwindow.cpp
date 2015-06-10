@@ -21,7 +21,7 @@ MainWindow::MainWindow(QWidget *parent) :
 	/*
 	// debug load the shit straight up :)
 	// red list source CSV
-	QFile file("d:\\coding\\test_files\\stations_maddavo.csv");
+	QFile file("d://test_files//stations_maddavo.csv");
 	if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
 	{
 		QMessageBox::information(this, tr("Unable to open source CSV file"), file.errorString());
